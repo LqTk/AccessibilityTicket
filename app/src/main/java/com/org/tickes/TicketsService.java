@@ -243,6 +243,21 @@ public class TicketsService extends AccessibilityService {
                                         breakok = true;
                                         break;
                                     }
+                                }else if (stockText.contains("仅剩")){
+                                    String ticketCount = stockText.substring(2, stockText.indexOf("张"));
+                                    try {
+                                        int nowCountTicket = Integer.valueOf(ticketCount);
+                                        if (nowCountTicket>=personNameList.size()){
+                                            String orderText = detailOrderBtn.get(i).getText().toString();
+                                            if (orderText.equals("立即预订")){
+                                                detailOrderBtn.get(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                breakok = true;
+                                                break;
+                                            }
+                                        }
+                                    }catch (Exception e){
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
                         }
@@ -274,13 +289,25 @@ public class TicketsService extends AccessibilityService {
                             boolean breakOk = false;
                             for (int i = 0; i < setLine.getChildCount(); i++) {
                                 AccessibilityNodeInfo child = setLine.getChild(i);
-                                if (child!=null) {
+                                if (child!=null && !TextUtils.isEmpty(child.getText())) {
                                     String seatName = child.getText().toString();
                                     if (seatName.contains(currentSetSeatName)) {
-                                        if (seatName.contains("有票") || seatName.contains("张")) {
+                                        if (seatName.contains("有票")) {
                                             child.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                                             breakOk = true;
                                             break;
+                                        }else if (seatName.contains("张")){
+                                            String ticketCount = seatName.substring(currentSetSeatName.length()+1, seatName.indexOf("张"));
+                                            try {
+                                                int nowCountTicket = Integer.valueOf(ticketCount);
+                                                if (nowCountTicket>=personNameList.size()) {
+                                                    child.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    breakOk = true;
+                                                    break;
+                                                }
+                                            }catch (Exception e){
+                                                e.printStackTrace();
+                                            }
                                         }
                                     }
                                     Log.d("seatName", text + child.getText().toString());

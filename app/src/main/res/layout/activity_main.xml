@@ -94,7 +94,7 @@
         android:layout_height="320dp"
         android:orientation="vertical"
         android:layout_below="@+id/v_center"
-        android:layout_marginBottom="140dp">
+        android:layout_marginBottom="120dp">
         <LinearLayout
             android:id="@+id/ll_addinfo"
             android:orientation="vertical"
