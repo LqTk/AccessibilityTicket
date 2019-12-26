@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">抢票助手</string>
+    <string name="service_description">抢票助手，启动后在《飞猪》app中帮助抢票，无需人手动点击抢票，请不使用时关闭软件</string>
+</resources>
