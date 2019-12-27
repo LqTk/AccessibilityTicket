@@ -34,6 +34,9 @@ public class TicketsService extends AccessibilityService {
     private boolean isBuyTickets = false;
     private List<String> getNowPassengerNames = new ArrayList<>();
     private boolean hasPassenger = false;
+    private String chooseSeatName = "";
+    private int hasChooseSeatCount = 0;
+    private boolean canChooseSeat = false;
 
     @Override
     protected void onServiceConnected() {
@@ -117,18 +120,19 @@ public class TicketsService extends AccessibilityService {
         if (tripNames!=null && tripNames.size()>0){
             if (hasPassenger) {
                 for (AccessibilityNodeInfo tripItem : tripNames) {
-                    if (getNowPassengerNames.contains(tripItem.getText().toString().trim())) {
+                    if (!TextUtils.isEmpty(tripItem.getText())&&getNowPassengerNames.contains(tripItem.getText().toString().trim())) {
                         tripItem.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                     }
                 }
             }
             for (AccessibilityNodeInfo tripItem:tripNames){
-                if (personNameList.contains(tripItem.getText().toString().trim())){
+                if (!TextUtils.isEmpty(tripItem.getText())&&personNameList.contains(tripItem.getText().toString().trim())){
                     tripItem.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 }
             }
             List<AccessibilityNodeInfo> btnFinish = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/btn_finish");
             if (btnFinish!=null && btnFinish.size()>0){
+                hasChooseSeatCount = 0;
                 btnFinish.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
         }
@@ -139,6 +143,71 @@ public class TicketsService extends AccessibilityService {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode==null)
             return;
+        List<AccessibilityNodeInfo> recyclerViewNode = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/purchase_recycler_view");
+        if (recyclerViewNode!=null && recyclerViewNode.size()>0 && hasChooseSeatCount <personNameList.size()){
+            AccessibilityNodeInfo recyclerView = recyclerViewNode.get(0);
+            recyclerView.performAction(AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE);
+            List<AccessibilityNodeInfo> tripLine = recyclerView.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/ll_trip1_line2");
+            if (tripLine!=null && tripLine.size()>0) {
+                canChooseSeat = true;
+                List<AccessibilityNodeInfo> checkBoxList = new ArrayList<>();
+                AccessibilityNodeInfo tripChild = tripLine.get(0);
+                if (tripChild!=null){
+                    for (int i=0;i<tripChild.getChildCount();i++){
+                        AccessibilityNodeInfo tripItem = tripLine.get(0).getChild(i);
+                        if (tripItem!=null) {
+                            CharSequence className = tripItem.getClassName();
+                            if (className != null && className.equals("android.widget.CheckBox")) {
+                                checkBoxList.add(tripItem);
+                            }
+                        }
+                    }
+                }
+                if (chooseSeatName.equals("二等座") && checkBoxList.size()>4){
+                    if (personNameList.size()==1 && hasChooseSeatCount==0){
+                        checkBoxList.get(4).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    }else if (personNameList.size()==2){
+                        if (hasChooseSeatCount==0) {
+                            checkBoxList.get(3).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }else if (hasChooseSeatCount==1) {
+                            checkBoxList.get(4).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                    }else if (personNameList.size()==3){
+                        if (hasChooseSeatCount==0) {
+                            checkBoxList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }else if (hasChooseSeatCount==1) {
+                            checkBoxList.get(1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }else if (hasChooseSeatCount==2) {
+                            checkBoxList.get(2).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                    }
+                    Log.d("immediateOrder","选座位"+hasChooseSeatCount);
+                    hasChooseSeatCount++;
+                }else if (chooseSeatName.equals("一等座") && checkBoxList.size()>3){
+                    if (personNameList.size()==1 && hasChooseSeatCount==0){
+                        checkBoxList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    }else if (personNameList.size()==2){
+                        if (hasChooseSeatCount==0) {
+                            checkBoxList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }else if (hasChooseSeatCount==1) {
+                            checkBoxList.get(1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                    }else if (personNameList.size()==3){
+                        if (hasChooseSeatCount==0) {
+                            checkBoxList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }else if (hasChooseSeatCount==1) {
+                            checkBoxList.get(1).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }else if (hasChooseSeatCount==2) {
+                            checkBoxList.get(4).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                    }
+                    hasChooseSeatCount++;
+                }
+            }
+        }else {
+            canChooseSeat = false;
+        }
+
         List<AccessibilityNodeInfo> passengerNames = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_passenger_name");
         if (passengerNames!=null && passengerNames.size()>0){
             getNowPassengerNames.clear();
@@ -146,20 +215,22 @@ public class TicketsService extends AccessibilityService {
                 boolean hasSetPassenger = true;
                 for (int m=0;m<passengerNames.size();m++){
                     AccessibilityNodeInfo nameItem = passengerNames.get(m);
-                    if (nameItem!=null) {
-                        if (!TextUtils.isEmpty(nameItem.getText().toString())) {
+                    if (nameItem!=null && !TextUtils.isEmpty(nameItem.getText())) {
+                        if (!TextUtils.isEmpty(nameItem.getText())) {
                             if (!personNameList.contains(nameItem.getText().toString().trim())) {
                                 hasSetPassenger = false;
                             }
                         }else {
                             hasSetPassenger = false;
                         }
+                        getNowPassengerNames.add(nameItem.getText().toString().trim());
                     }
-                    getNowPassengerNames.add(nameItem.getText().toString().trim());
                 }
                 if (hasSetPassenger){
                     //乘车人正确
-                    createOrder();
+                    if (!canChooseSeat) {
+                        createOrder();
+                    }
                 }else {
                     //乘车人不正确
                     gotoSelectPassenger();
@@ -168,7 +239,7 @@ public class TicketsService extends AccessibilityService {
                 for (int m=0;m<passengerNames.size();m++){
                     AccessibilityNodeInfo nameItem = passengerNames.get(m);
                     if (nameItem!=null) {
-                        if (!TextUtils.isEmpty(nameItem.getText().toString())) {
+                        if (!TextUtils.isEmpty(nameItem.getText())) {
                             getNowPassengerNames.add(nameItem.getText().toString().trim());
                         }
                     }
@@ -188,6 +259,7 @@ public class TicketsService extends AccessibilityService {
         List<AccessibilityNodeInfo> orderImmediately = rootNode.findAccessibilityNodeInfosByText("立即预订");
         if (orderImmediately!=null && orderImmediately.size()>0){
             orderImmediately.get(0).getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            Log.d("immediateOrder","立即预定");
         }
     }
 
@@ -211,7 +283,6 @@ public class TicketsService extends AccessibilityService {
             }
             addPassenger.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
         }
-
     }
 
     //预定页面
@@ -221,42 +292,50 @@ public class TicketsService extends AccessibilityService {
             return;
         List<AccessibilityNodeInfo> trainNumberNode = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/table_train_number");
         if (trainNumberNode!=null && trainNumberNode.size()>0){
+            if (TextUtils.isEmpty(trainNumberNode.get(0).getText()))
+                return;
             String text = trainNumberNode.get(0).getText().toString();
             if (trainNumList.contains(text)) {
                 List<String> setTrainSeat = trainEntityList.get(trainNumList.lastIndexOf(text)).getSeatNameList();
                 List<AccessibilityNodeInfo> seatsContainer = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_no_seats_container");
                 if (seatsContainer!=null && seatsContainer.size()>0) {
-                    List<AccessibilityNodeInfo> detailSeatName = seatsContainer.get(0).findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_detail_seat_name");
-                    List<AccessibilityNodeInfo> detailStockInfo = seatsContainer.get(0).findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_detail_stock_info");
-                    List<AccessibilityNodeInfo> detailOrderBtn = seatsContainer.get(0).findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_detail_btn");
+                    List<AccessibilityNodeInfo> detailSeatName = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_detail_seat_name");
+                    List<AccessibilityNodeInfo> detailStockInfo = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_detail_stock_info");
+                    List<AccessibilityNodeInfo> detailOrderBtn = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_detail_btn");
                     for (int k = 0; k < setTrainSeat.size(); k++) {
                         String setName = setTrainSeat.get(k);
                         boolean breakok = false;
-                        for (int i=0;i<detailSeatName.size();i++){
-                            String recentSeatName = detailSeatName.get(i).getChild(0).getText().toString();
-                            if (recentSeatName.equals(setName)){
-                                String stockText = detailStockInfo.get(i).getText().toString();
-                                if (stockText.equals("有票")){
-                                    String orderText = detailOrderBtn.get(i).getText().toString();
-                                    if (orderText.equals("立即预订")){
-                                        detailOrderBtn.get(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                        breakok = true;
-                                        break;
-                                    }
-                                }else if (stockText.contains("仅剩")){
-                                    String ticketCount = stockText.substring(2, stockText.indexOf("张"));
-                                    try {
-                                        int nowCountTicket = Integer.valueOf(ticketCount);
-                                        if (nowCountTicket>=personNameList.size()){
-                                            String orderText = detailOrderBtn.get(i).getText().toString();
-                                            if (orderText.equals("立即预订")){
-                                                detailOrderBtn.get(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                breakok = true;
-                                                break;
-                                            }
+                        for (int i=0;i<detailSeatName.size();i++) {
+                            if (!TextUtils.isEmpty(detailSeatName.get(i).getChild(0).getText())) {
+                                String recentSeatName = detailSeatName.get(i).getChild(0).getText().toString();
+                                if (recentSeatName.equals(setName) && !TextUtils.isEmpty(detailStockInfo.get(i).getText())) {
+                                    String stockText = detailStockInfo.get(i).getText().toString();
+                                    if (stockText.equals("有票")) {
+                                        String orderText = detailOrderBtn.get(i).getText().toString();
+                                        if (orderText.equals("立即预订")) {
+                                            chooseSeatName = setName;
+                                            hasChooseSeatCount = 0;
+                                            detailOrderBtn.get(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            breakok = true;
+                                            break;
                                         }
-                                    }catch (Exception e){
-                                        e.printStackTrace();
+                                    } else if (stockText.contains("仅剩")) {
+                                        String ticketCount = stockText.substring(2, stockText.indexOf("张"));
+                                        try {
+                                            int nowCountTicket = Integer.valueOf(ticketCount);
+                                            if (nowCountTicket >= personNameList.size()) {
+                                                String orderText = detailOrderBtn.get(i).getText().toString();
+                                                if (orderText.equals("立即预订")) {
+                                                    chooseSeatName = setName;
+                                                    hasChooseSeatCount = 0;
+                                                    detailOrderBtn.get(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                    breakok = true;
+                                                    break;
+                                                }
+                                            }
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
                                     }
                                 }
                             }
@@ -276,45 +355,47 @@ public class TicketsService extends AccessibilityService {
             return;
         List<AccessibilityNodeInfo> trainNumberNode = rootNode.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_item_number");
         if (trainNumberNode!=null && trainNumberNode.size()>0){
-            for (AccessibilityNodeInfo numBer:trainNumberNode){
-                String text = numBer.getText().toString().trim();
-                if (trainNumList.contains(text)) {
-                    List<String> nowTrainSeat = trainEntityList.get(trainNumList.lastIndexOf(text)).getSeatNameList();
-                    AccessibilityNodeInfo numParent = numBer.getParent();
-                    List<AccessibilityNodeInfo> seatLineNode = numParent.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_item_seat_line");
-                    if (seatLineNode != null && seatLineNode.size() > 0) {
-                        AccessibilityNodeInfo setLine = seatLineNode.get(0);
-                        for (int m=0;m<nowTrainSeat.size();m++){
-                            String currentSetSeatName = nowTrainSeat.get(m);
-                            boolean breakOk = false;
-                            for (int i = 0; i < setLine.getChildCount(); i++) {
-                                AccessibilityNodeInfo child = setLine.getChild(i);
-                                if (child!=null && !TextUtils.isEmpty(child.getText())) {
-                                    String seatName = child.getText().toString();
-                                    if (seatName.contains(currentSetSeatName)) {
-                                        if (seatName.contains("有票")) {
-                                            child.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                            breakOk = true;
-                                            break;
-                                        }else if (seatName.contains("张")){
-                                            String ticketCount = seatName.substring(currentSetSeatName.length()+1, seatName.indexOf("张"));
-                                            try {
-                                                int nowCountTicket = Integer.valueOf(ticketCount);
-                                                if (nowCountTicket>=personNameList.size()) {
-                                                    child.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                                    breakOk = true;
-                                                    break;
+            for (AccessibilityNodeInfo numBer:trainNumberNode) {
+                if (!TextUtils.isEmpty(numBer.getText())) {
+                    String text = numBer.getText().toString().trim();
+                    if (trainNumList.contains(text)) {
+                        List<String> nowTrainSeat = trainEntityList.get(trainNumList.lastIndexOf(text)).getSeatNameList();
+                        AccessibilityNodeInfo numParent = numBer.getParent();
+                        List<AccessibilityNodeInfo> seatLineNode = numParent.findAccessibilityNodeInfosByViewId("com.taobao.trip:id/train_item_seat_line");
+                        if (seatLineNode != null && seatLineNode.size() > 0) {
+                            AccessibilityNodeInfo setLine = seatLineNode.get(0);
+                            for (int m = 0; m < nowTrainSeat.size(); m++) {
+                                String currentSetSeatName = nowTrainSeat.get(m);
+                                boolean breakOk = false;
+                                for (int i = 0; i < setLine.getChildCount(); i++) {
+                                    AccessibilityNodeInfo child = setLine.getChild(i);
+                                    if (child != null && !TextUtils.isEmpty(child.getText())) {
+                                        String seatName = child.getText().toString();
+                                        if (seatName.contains(currentSetSeatName)) {
+                                            if (seatName.contains("有票")) {
+                                                child.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                breakOk = true;
+                                                break;
+                                            } else if (seatName.contains("张")) {
+                                                String ticketCount = seatName.substring(currentSetSeatName.length() + 1, seatName.indexOf("张"));
+                                                try {
+                                                    int nowCountTicket = Integer.valueOf(ticketCount);
+                                                    if (nowCountTicket >= personNameList.size()) {
+                                                        child.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                                        breakOk = true;
+                                                        break;
+                                                    }
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
                                                 }
-                                            }catch (Exception e){
-                                                e.printStackTrace();
                                             }
                                         }
+                                        Log.d("seatName", text + child.getText().toString());
                                     }
-                                    Log.d("seatName", text + child.getText().toString());
                                 }
-                            }
-                            if (breakOk){
-                                break;
+                                if (breakOk) {
+                                    break;
+                                }
                             }
                         }
                     }
