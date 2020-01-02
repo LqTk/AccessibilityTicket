@@ -10,6 +10,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import com.org.tickes.entities.PersonEntity;
 import com.org.tickes.entities.TrainEntity;
 import com.org.tickes.eventbus.NotifyData;
+import com.org.tickes.eventbus.StopServiceEvent;
 import com.org.tickes.utils.Global;
 import com.org.tickes.utils.MyPreference;
 import com.org.tickes.utils.Notifier;
@@ -37,6 +38,7 @@ public class TicketsService extends AccessibilityService {
     private String chooseSeatName = "";
     private int hasChooseSeatCount = 0;
     private boolean canChooseSeat = false;
+    private boolean stop = false;
 
     @Override
     protected void onServiceConnected() {
@@ -50,6 +52,7 @@ public class TicketsService extends AccessibilityService {
         accessibilityServiceInfo.feedbackType = AccessibilityServiceInfo.FEEDBACK_ALL_MASK;
         accessibilityServiceInfo.notificationTimeout = 10;
         setServiceInfo(accessibilityServiceInfo);
+        Global.isStop = false;
         // 4.0之后可通过xml进行配置,以下加入到Service里面
         /*
          * <meta-data android:name="android.accessibilityservice"
@@ -65,6 +68,8 @@ public class TicketsService extends AccessibilityService {
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         CharSequence currentClassName = event.getClassName();
+        if (Global.isStop)
+            return;
         Log.d("currentClassName:", (String) currentClassName);
         if (currentClassName.equals("com.taobao.trip.train.ui.list.TrainListActivity")){
             //查询车次页面
@@ -335,6 +340,15 @@ public class TicketsService extends AccessibilityService {
                                             }
                                         } catch (Exception e) {
                                             e.printStackTrace();
+                                        }
+                                    } else if (stockText.contains("预")){
+                                        String orderText = detailOrderBtn.get(i).getText().toString();
+                                        if (orderText.equals("立即预订")) {
+                                            chooseSeatName = setName;
+                                            hasChooseSeatCount = 0;
+                                            detailOrderBtn.get(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                            breakok = true;
+                                            break;
                                         }
                                     }
                                 }

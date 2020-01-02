@@ -38,7 +38,7 @@ public class PackageUtils {
 		if (it.hasNext()) {
 			ri = it.next();
 		} else {
-			Toast.makeText(context, "Can not open application", Toast.LENGTH_SHORT).show();
+			Toast.makeText(context, "不能打开APP", Toast.LENGTH_SHORT).show();
 		}
 		if (ri != null) {
 			String className = ri.activityInfo.name;

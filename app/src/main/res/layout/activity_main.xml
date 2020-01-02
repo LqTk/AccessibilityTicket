@@ -32,21 +32,39 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/rl_top"
-        android:id="@+id/rl_statue"
-        android:padding="10dp">
+        android:id="@+id/rl_statue">
+        <View
+            android:layout_marginBottom="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorGray"/>
         <TextView
             android:id="@+id/tv_service_statue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="服务状态"
             android:textSize="25sp"
+            android:padding="10dp"
             android:layout_centerVertical="true"/>
+
+        <TextView
+            android:id="@+id/tv_stop_service"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="暂停"
+            android:textSize="15sp"
+            android:textColor="#ff0000"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/seat_bg"
+            android:visibility="gone"
+            android:layout_margin="10dp"/>
     </RelativeLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#999999"
+        android:background="@color/colorGray"
         android:layout_below="@+id/rl_statue"
         android:id="@+id/v_top"/>
     <LinearLayout
